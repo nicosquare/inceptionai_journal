@@ -64,6 +64,98 @@ Adversarial training (AT) has emerged as one of the most effective defenses agai
 
 Our evaluation provides the first comprehensive multi-attack analysis of adversarial robustness in genomic models, revealing critical limitations of current defense mechanisms and highlighting the need for genomics-specific security approaches.
 
+\section{Adversarial Attack Mechanisms}
+
+Understanding the fundamental mechanisms of adversarial attacks is crucial for interpreting our experimental results and developing effective defenses. This section provides a comprehensive overview of the two primary attack methodologies evaluated in this study: Projected Gradient Descent (PGD) and Feature Importance-based Model-agnostic Black-box Adversarial (FIMBA) attacks.
+
+\subsection{Attack Overview and Comparison}
+
+Figure~\ref{fig:attack_overview} presents a comprehensive comparison of the attack mechanisms, their effectiveness, and perturbation strategies. Our evaluation reveals that these attacks exploit fundamentally different vulnerabilities in genomic models, with varying degrees of biological realism and practical feasibility.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figures/attack_overview_diagram.pdf}
+\caption{Comprehensive overview of adversarial attack mechanisms in genomic models. (Top left) PGD attack mechanism showing gradient-based iterative optimization. (Top right) FIMBA attack mechanism illustrating feature importance ranking. (Bottom left) DNA sequence perturbation example demonstrating nucleotide-level changes. (Bottom right) Attack effectiveness comparison showing relative impact on model performance.}
+\label{fig:attack_overview}
+\end{figure}
+
+\subsection{Projected Gradient Descent (PGD) Attacks}
+
+PGD attacks represent the gold standard for evaluating adversarial robustness, employing iterative gradient-based optimization to find minimal perturbations that maximally deceive the target model. These attacks are particularly relevant for genomic applications due to their ability to generate biologically plausible mutations.
+
+\subsubsection{Mechanism and Norm Constraints}
+
+Figure~\ref{fig:pgd_mechanism} illustrates the fundamental differences between $\ell_2$ and $\ell_\infty$ norm constraints in PGD attacks. The choice of norm significantly impacts both the attack's effectiveness and biological interpretability.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figures/pgd_mechanism_diagram.pdf}
+\caption{PGD attack mechanism under different norm constraints. (Left) $\ell_2$ norm constraint forming a circular perturbation space, allowing distributed changes across features. (Center) $\ell_\infty$ norm constraint creating a square perturbation space, limiting maximum per-feature changes. (Right) Iterative PGD optimization trajectory showing gradient-based convergence within constraint boundaries.}
+\label{fig:pgd_mechanism}
+\end{figure}
+
+The $\ell_2$ norm constraint allows for distributed perturbations across multiple sequence positions, potentially modeling scenarios where multiple low-impact mutations accumulate to create adversarial effects. In contrast, the $\ell_\infty$ norm constraint limits the maximum change at any single position, more closely resembling single nucleotide polymorphisms (SNPs) or targeted mutagenesis experiments.
+
+Our results demonstrate that $\ell_\infty$ attacks are significantly more effective than $\ell_2$ attacks (58.9\% vs 3.8\% average accuracy drop), suggesting that genomic models are particularly vulnerable to localized, high-impact perturbations rather than distributed, low-impact changes.
+
+\subsection{Feature Importance-based Model-agnostic Black-box Adversarial (FIMBA) Attacks}
+
+FIMBA attacks represent a more realistic threat model for genomic applications, requiring only black-box access to the target model. These attacks leverage feature importance ranking to identify the most critical sequence positions for targeted perturbation.
+
+\subsubsection{Multi-stage Attack Process}
+
+Figure~\ref{fig:fimba_mechanism} details the four-stage FIMBA attack process, from feature importance computation to attack success evaluation.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figures/fimba_mechanism_diagram.pdf}
+\caption{FIMBA attack mechanism showing the complete four-stage process. (Top left) Feature importance computation through black-box queries. (Top right) Model query workflow for importance ranking. (Bottom left) Iterative perturbation process targeting high-importance features. (Bottom right) Attack success evaluation showing parameter independence.}
+\label{fig:fimba_mechanism}
+\end{figure}
+
+The FIMBA attack process begins by systematically perturbing individual sequence positions and observing prediction changes to compute feature importance scores. High-importance features are then targeted for perturbation, creating adversarial examples through iterative modification. This approach is particularly relevant for genomic applications as it:
+
+\begin{enumerate}
+    \item \textbf{Requires only black-box access:} Realistic for scenarios where model internals are not accessible
+    \item \textbf{Targets biologically relevant features:} Focuses on sequence regions with high functional importance
+    \item \textbf{Generates interpretable perturbations:} Creates mutations at identifiable, high-impact positions
+    \item \textbf{Demonstrates parameter robustness:} Shows consistent effectiveness across different top-k values
+\end{enumerate}
+
+Our experiments reveal that FIMBA attacks achieve a 27.1\% average accuracy drop while maintaining biological plausibility through targeted, position-specific mutations.
+
+\subsection{Attack Characteristics Comparison}
+
+Figure~\ref{fig:attack_comparison} provides a comprehensive comparison matrix of attack characteristics, highlighting the trade-offs between different attack methodologies.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/attack_comparison_matrix.pdf}
+\caption{Comprehensive comparison matrix of adversarial attack characteristics. The heatmap shows relative performance across seven key dimensions: gradient access requirements, computational cost, biological realism, attack success rate, parameter sensitivity, defense transferability, and practical feasibility.}
+\label{fig:attack_comparison}
+\end{figure}
+
+The comparison reveals complementary strengths and weaknesses:
+
+\begin{itemize}
+    \item \textbf{PGD L2:} High computational cost but limited biological realism and attack success
+    \item \textbf{PGD L∞:} Excellent attack success rate but poor defense transferability and limited practical feasibility
+    \item \textbf{FIMBA:} Superior practical feasibility and biological realism with moderate computational requirements
+\end{itemize}
+
+\subsection{Implications for Genomic Security}
+
+The different attack mechanisms highlight critical vulnerabilities in genomic machine learning systems:
+
+\begin{enumerate}
+    \item \textbf{Gradient-based vulnerabilities:} PGD attacks exploit the differentiable nature of neural networks, revealing fundamental weaknesses in model architectures
+    \item \textbf{Feature importance exploitation:} FIMBA attacks demonstrate that even black-box access can be sufficient for effective adversarial perturbations
+    \item \textbf{Biological constraint violations:} The high effectiveness of $\ell_\infty$ attacks suggests that biologically unrealistic perturbations pose significant threats
+    \item \textbf{Defense mechanism limitations:} The varying effectiveness across attack types indicates that current defense strategies may not generalize across different threat models
+\end{enumerate}
+
+These findings underscore the need for comprehensive security evaluation frameworks that consider multiple attack vectors and threat models when deploying genomic machine learning systems in critical applications.
+
 \section{Methodology}
 
 \subsection{Experimental Setup}
@@ -241,6 +333,25 @@ Our analysis reveals several critical findings:
 \section{Discussion and Implications}
 
 The stark difference in robustness between $\ell_2$ and $\ell_\infty$ attacks highlights a critical security concern for genomic machine learning applications. The $\ell_\infty$ norm, which constrains the maximum change in any single feature, appears to be particularly effective at exploiting vulnerabilities in DNA sequence models.
+
+\subsection{Defense Effectiveness Analysis}
+
+Figure~\ref{fig:defense_effectiveness} provides a comprehensive analysis of adversarial training effectiveness against different attack types, revealing the limitations of current defense mechanisms in genomic applications.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figures/defense_effectiveness_chart.pdf}
+\caption{Defense effectiveness analysis showing model performance under different attacks and the impact of adversarial training. (Left) Comparison of standard vs. adversarially trained model performance under attack. (Right) Quantification of adversarial training effectiveness, showing modest improvements for PGD attacks but no improvement against FIMBA attacks.}
+\label{fig:defense_effectiveness}
+\end{figure}
+
+The defense analysis reveals several critical insights:
+
+\begin{enumerate}
+    \item \textbf{Limited PGD L2 improvement:} Adversarial training provides only modest protection (3.4\% improvement) against already weak L2 attacks
+    \item \textbf{Marginal PGD L∞ benefits:} Despite the devastating effectiveness of L∞ attacks, adversarial training offers minimal improvement (2.6\%)
+    \item \textbf{FIMBA resistance failure:} Adversarial training shows no improvement against FIMBA attacks, indicating fundamental limitations in current defense strategies
+\end{enumerate}
 
 This vulnerability is concerning for real-world applications where adversarial DNA sequences could potentially be generated through targeted mutations or synthesized sequences. The genomic domain's discrete nature and biological constraints may require specialized defense mechanisms beyond traditional adversarial training approaches.
 
